@@ -1,0 +1,16 @@
+{
+  "name": "jaffacam",
+  "version": "1.0.0",
+  "description": "RasPi based pushbutton camera that pushes pics to Azure Cloud Storage",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Parallax",
+  "license": "ISC",
+  "dependencies": {
+    "azure-storage": "^2.10.2",
+    "dateformat": "^3.0.3",
+    "pi-camera": "^1.2.1"
+  }
+}
