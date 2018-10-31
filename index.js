@@ -9,8 +9,10 @@ var __dirName = config.dir_name;
 if (!fs.existsSync(__dirName)){
     fs.mkdirSync(__dirName);
 }
-
-const button = new gpio(21, 'in',"rising");
+//pin number, direction, button press to catch.  
+//In this case we want to catch only one instance of the press, so either rising (press) or falling (release)
+//debounce timeout takes care of hardware jitters (hardware thinks button was pressed multiple times.)
+const button = new gpio(21, 'in',"rising",{debounceTimeout: 10});
 const led = new gpio(17, "out");
 
 var __blobConnString = config.blob_conn_string;
@@ -23,7 +25,8 @@ const myCamera = new PiCamera({
   width: 640,
   height: 480,
   nopreview: true,
-  rotation: 180
+  rotation: 180,
+  annotation: getImageName()
 });
 
 console.log("waiting for button presses...");
@@ -41,20 +44,19 @@ function captureAndUploadImage(value){
   toggleLED(value);
   myCamera.snap()
   .then((result) => {
-      // Your picture was captured
-      blobService.createBlockBlobFromLocalFile('imagecontainer', 'imageblob', imageName, function(error, result, response) {
+      blobService.createBlockBlobFromLocalFile('imagecontainer', getImageName(), imageName, function(error, result, response) {
         if (!error) {
           console.log(`${imageName} Uploaded!`);
-          //var rmFile = fs.unlink(imageName);
         }else{
           console.log("File not uploaded!");
         }
       });
+      toggleLED(value);
   })
   .catch((error) => {
-      // Handle your error
+      console.log(error);
+      toggleLED(value);
   });
-  toggleLED(value);
 }
 
 function getImageName()
@@ -67,8 +69,12 @@ function getImageName()
 
 function exitHandler(){
   console.log("cleaning up...");
+  console.log("deallocating led...");
+  led.unexport();
+  console.log("deallocating button...");
   button.unexport();
-  console.log("buh-bye!");
+  console.log("all done!  buh-bye!");
+  process.exit(0);
 }
 
-process.on('exit', exitHandler.bind(null,null));
+process.on('SIGINT', exitHandler.bind(null, null));
