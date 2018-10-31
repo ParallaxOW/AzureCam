@@ -9,30 +9,37 @@ if (!fs.existsSync(__dirName)){
     fs.mkdirSync(__dirName);
 }
 
-//var blobService = azure.createBlobService();
+var __blobConnString = config.blob_conn_string;
+console.log(__blobConnString);
+
+var blobService = azure.createBlobService(__blobConnString);
+
+var imageName = `${__dirName}${getImageName()}`;
 
 const myCamera = new PiCamera({
   mode: 'photo',
-  output: `${__dirName}${getImageName()}`,
+  output: imageName,
   width: 640,
   height: 480,
   nopreview: true,
+  rotation: 180
 });
  
 myCamera.snap()
 .then((result) => {
     // Your picture was captured
+    blobService.createBlockBlobFromLocalFile('imagecontainer', 'imageblob', imageName, function(error, result, response) {
+      if (!error) {
+        console.log(`${imageName} Uploaded!`);
+        var rmFile = fs.unlink(imageName);
+      }else{
+        console.log("File not uploaded!");
+      }
+    });
 })
 .catch((error) => {
      // Handle your error
 });
-
- 
-// blobService.createBlockBlobFromLocalFile('mycontainer', 'taskblob', 'task1-upload.txt', function(error, result, response) {
-//   if (!error) {
-//     // file uploaded
-//   }
-// });
 
 function getImageName()
 {
@@ -40,5 +47,4 @@ function getImageName()
   var formattedDate = dateFormat(now, "yyyymmdd_HHMMss");
   var fileName = `/image_${formattedDate}.jpg`;
   return fileName;
-
 }
