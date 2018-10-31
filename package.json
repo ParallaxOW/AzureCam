@@ -11,6 +11,7 @@
   "dependencies": {
     "azure-storage": "^2.10.2",
     "dateformat": "^3.0.3",
+    "onoff": "^3.2.2",
     "pi-camera": "^1.2.1"
   }
 }
