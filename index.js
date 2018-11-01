@@ -5,6 +5,8 @@ const dateFormat = require("dateformat");
 const gpio = require("onoff").Gpio;
 const config = require("./config.json");
 
+const { analyzeImage } = require("./compvision");
+
 var __dirName = config.dir_name;
 if (!fs.existsSync(__dirName)){
     fs.mkdirSync(__dirName);
@@ -17,11 +19,13 @@ const led = new gpio(17, "out");
 
 var __blobConnString = config.blob_conn_string;
 var blobService = azure.createBlobService(__blobConnString);
-var imageName = `${__dirName}${getImageName()}`;
+var imageName = "";
+var pathName = "";
+var camOutputName = "./images/camsnap.jpg";
 
 const myCamera = new PiCamera({
   mode: 'photo',
-  output: imageName,
+  output: camOutputName,
   width: 2592, 
   height: 1944,
   nopreview: true,
@@ -38,16 +42,29 @@ function toggleLED(value){
     led.writeSync(0);
 }
 
+function generateFileName(){
+  imageName = getImageName();
+  pathName = `${__dirName}/${imageName}`;
+}
+
 function captureAndUploadImage(value){
   console.log("capturing and uploading image....");
+  generateFileName();
+
+  myCamera.output = pathName;
+
   toggleLED(value);
   myCamera.snap()
   .then((result) => {
-      blobService.createBlockBlobFromLocalFile('imagecontainer', getImageName(), imageName, function(error, result, response) {
+      //we'll rename the snapped pic, since we can't dynamically reset the cam output name.
+      fs.renameSync(camOutputName, pathName);
+
+      blobService.createBlockBlobFromLocalFile('imagecontainer', imageName, pathName, function(error, result, response) {
         if (!error) {
-          console.log(`${imageName} Uploaded!`);
+          console.log(`${imageName} Uploaded! analyzing...`);
+          analyzeImage(pathName);
         }else{
-          console.log("File not uploaded!");
+          console.log(`File not uploaded :: ${error}`);
         }
       });
       toggleLED(value);
@@ -60,7 +77,7 @@ function captureAndUploadImage(value){
 
 function getImageName()
 {
-  var fileName = `/image_${getFormattedDate()}.jpg`;
+  var fileName = `image_${getFormattedDate()}.jpg`;
   return fileName;
 }
 
