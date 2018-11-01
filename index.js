@@ -22,11 +22,10 @@ var imageName = `${__dirName}${getImageName()}`;
 const myCamera = new PiCamera({
   mode: 'photo',
   output: imageName,
-  width: 640,
-  height: 480,
+  width: 2592, 
+  height: 1944,
   nopreview: true,
-  rotation: 180,
-  annotation: getImageName()
+  rotation: 180
 });
 
 console.log("waiting for button presses...");
@@ -61,10 +60,14 @@ function captureAndUploadImage(value){
 
 function getImageName()
 {
+  var fileName = `/image_${getFormattedDate()}.jpg`;
+  return fileName;
+}
+
+function getFormattedDate(){
   var now = new Date();
   var formattedDate = dateFormat(now, "yyyymmdd_HHMMss");
-  var fileName = `/image_${formattedDate}.jpg`;
-  return fileName;
+  return formattedDate;
 }
 
 function exitHandler(){
