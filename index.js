@@ -15,7 +15,8 @@ if (!fs.existsSync(__dirName)){
 //In this case we want to catch only one instance of the press, so either rising (press) or falling (release)
 //debounce timeout takes care of hardware jitters (hardware thinks button was pressed multiple times.)
 const button = new gpio(21, 'in',"rising",{debounceTimeout: 10});
-const led = new gpio(17, "out");
+const camSnapLED = new gpio(17, "out");
+const analyzeLED = new gpio(27, "out");
 
 var __blobConnString = config.blob_conn_string;
 var blobService = azure.createBlobService(__blobConnString);
@@ -35,16 +36,24 @@ const myCamera = new PiCamera({
 console.log("waiting for button presses...");
 button.watch((err, value) => captureAndUploadImage(value));
 
-function toggleLED(value){
-  if(led.readSync() === 0)
-    led.writeSync(1);
+function toggleLED(whichLed){
+  if(whichLed.readSync() === 0)
+    whichLed.writeSync(1);
   else
-    led.writeSync(0);
+    whichLed.writeSync(0);
 }
 
 function generateFileName(){
   imageName = getImageName();
   pathName = `${__dirName}/${imageName}`;
+}
+
+function ensureLightsOut(){
+  if(camSnapLED.readSync() === 1)
+    toggleLED(camSnapLED);
+
+  if(analyzeLED.readSync() === 1)
+    toggleLED(analyzeLED);
 }
 
 function captureAndUploadImage(value){
@@ -53,7 +62,7 @@ function captureAndUploadImage(value){
 
   myCamera.output = pathName;
 
-  toggleLED(value);
+  toggleLED(camSnapLED);
   myCamera.snap()
   .then((result) => {
       //we'll rename the snapped pic, since we can't dynamically reset the cam output name.
@@ -62,16 +71,19 @@ function captureAndUploadImage(value){
       blobService.createBlockBlobFromLocalFile('imagecontainer', imageName, pathName, function(error, result, response) {
         if (!error) {
           console.log(`${imageName} Uploaded! analyzing...`);
+          toggleLED(camSnapLED);
+          toggleLED(analyzeLED);
           analyzeImage(pathName);
+          toggleLED(analyzeLED);
         }else{
           console.log(`File not uploaded :: ${error}`);
+          ensureLightsOut();
         }
       });
-      toggleLED(value);
   })
   .catch((error) => {
       console.log(error);
-      toggleLED(value);
+      ensureLightsOut();
   });
 }
 
