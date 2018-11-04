@@ -15,12 +15,9 @@ module.exports = {
         let client = new ComputerVisionClient(credentials, config.comp_vision_endpoint);
         let fileStream = createReadStream(fileName);
         
-        client.analyzeImageInStreamWithHttpOperationResponse(fileStream, {
-        visualFeatures: ['Categories', 'Tags', 'Description']
-        }).then((response) => {
-            console.log(response.body);
-        }).catch((err) => {
-            console.log(err);
+        //return the Promise that is resolved in the caller.
+        return client.analyzeImageInStreamWithHttpOperationResponse(fileStream, {
+        visualFeatures: ['Tags', 'Description']
         });
     }
 }
